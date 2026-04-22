@@ -6,7 +6,16 @@ interface NotificationsModalProps {
   onClose: () => void;
 }
 
-const mockNotifications = [
+interface NotificationItem {
+    id: number;
+    user: string;
+    action: string;
+    time: string;
+    icon: React.ReactNode;
+    avatar?: string;
+}
+
+const mockNotifications: NotificationItem[] = [
     { id: 3, user: 'Hệ thống', action: 'Chào mừng bạn đến với thế giới AI!', time: '1 ngày trước', icon: <Bot size={20} /> },
 ];
 

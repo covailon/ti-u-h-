@@ -2,13 +2,18 @@
 import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { Message, UserProfile } from '../types';
 
-const API_KEY = process.env.GEMINI_API_KEY;
+let aiInstance: GoogleGenAI | null = null;
 
-if (!API_KEY) {
-  console.warn("GEMINI_API_KEY is missing. AI features might not work.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const getAI = () => {
+    if (!aiInstance) {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error("GEMINI_API_KEY is missing. Please check your environment variables.");
+        }
+        aiInstance = new GoogleGenAI({ apiKey });
+    }
+    return aiInstance;
+};
 
 const formatHistory = (messages: Message[]) => {
     return messages
@@ -104,34 +109,36 @@ export const getAIResponseText = async (
         },
     ] : undefined;
 
-    const chatSession = ai.chats.create({
-      model: 'gemini-3-flash-preview',
-      config: {
-          systemInstruction: systemInstruction,
-      },
-      history: formattedHistory,
-      safetySettings: safetySettings,
-    });
-
-    let sendMessageParams: any = { message };
-
+    let response;
+    
     if (imageInput) {
-        sendMessageParams = {
-            message: {
-                parts: [
-                    { text: message || "Look at this image." },
-                    {
-                        inlineData: {
-                            data: imageInput.data,
-                            mimeType: imageInput.mimeType,
-                        }
-                    }
-                ]
+        const imagePart = {
+            inlineData: {
+                data: imageInput.data,
+                mimeType: imageInput.mimeType,
             }
         };
+        const textPart = {
+            text: message || "Look at this image.",
+        };
+        response = await getAI().models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: { parts: [imagePart, textPart] },
+          config: {
+              systemInstruction: systemInstruction,
+              safetySettings: safetySettings,
+          },
+        });
+    } else {
+        response = await getAI().models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: formattedHistory.concat([{ role: 'user', parts: [{ text: message }] }]),
+          config: {
+              systemInstruction: systemInstruction,
+              safetySettings: safetySettings,
+          },
+        });
     }
-
-    const response = await chatSession.sendMessage(sendMessageParams);
 
     if (!response.text && response.candidates?.[0]?.finishReason === 'SAFETY') {
         return "Phản hồi đã bị chặn vì lý do an toàn. Thử thay đổi câu chữ hoặc giảm mức độ nhạy cảm của yêu cầu nhé. [SCORE:0]";
@@ -149,8 +156,8 @@ export const getAIResponseText = async (
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
+        const response = await getAI().models.generateContent({
+            model: "gemini-3.1-flash-tts-preview",
             contents: [{ parts: [{ text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
@@ -171,12 +178,11 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
 
 export const generateImage = async (prompt: string): Promise<string | null> => {
     try {
-        const response = await ai.models.generateContent({
+        const response = await getAI().models.generateContent({
             model: 'gemini-2.5-flash-image',
-            contents: {
-                parts: [{ text: prompt }],
-            },
+            contents: [{ parts: [{ text: prompt }] }],
             config: {
+                // @ts-ignore
                 imageConfig: {
                     aspectRatio: "3:4",
                     imageSize: "1K"

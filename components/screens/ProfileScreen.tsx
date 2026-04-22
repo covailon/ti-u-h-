@@ -66,7 +66,7 @@ const ProfileScreen: React.FC = () => {
                         <div className="flex items-center gap-2 mt-1">
                              <div className="flex items-center gap-1 bg-yellow-100 px-2 py-0.5 rounded-full border border-yellow-200">
                                 <div className="w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center text-[10px] font-bold text-yellow-800">$</div>
-                                <span className="font-bold text-xs text-yellow-800">{userProfile.coins.toLocaleString()} Tim</span>
+                                <span className="font-bold text-xs text-yellow-800">{(userProfile.coins || 0).toLocaleString()} Tim</span>
                              </div>
                         </div>
                     </div>
