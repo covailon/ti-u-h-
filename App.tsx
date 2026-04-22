@@ -18,7 +18,6 @@ import CallModal from './components/CallModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import SplashScreen from './components/SplashScreen';
 import RedeemCodeModal from './components/RedeemCodeModal';
-import LoginScreen from './components/screens/LoginScreen';
 
 const MainAppContent: React.FC = () => {
   const context = useContext(AppContext);
@@ -26,20 +25,16 @@ const MainAppContent: React.FC = () => {
     throw new Error("AppContext must be used within an AppProvider");
   }
 
-  const { activeScreen, isChatting, user, isAuthLoading } = context;
+  const { activeScreen, isChatting, isAuthLoading } = context;
 
   if (isAuthLoading) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-pink-500"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="w-screen h-screen bg-gray-50 flex flex-col max-w-3xl mx-auto shadow-lg">
-        <LoginScreen />
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-white">
+        <div className="w-16 h-16 bg-pink-50 rounded-2xl flex items-center justify-center mb-4 animate-pulse">
+            <span className="text-xl font-bold text-pink-500">H</span>
+        </div>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-pink-500"></div>
+        <p className="mt-4 text-xs text-gray-400 font-medium tracking-widest uppercase">Đang khởi tạo...</p>
       </div>
     );
   }

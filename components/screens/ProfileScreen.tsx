@@ -30,7 +30,6 @@ const ProfileScreen: React.FC = () => {
         isNotificationsModalOpen, setIsNotificationsModalOpen,
         startChatWithCharacter,
         setIsRedeemCodeModalOpen,
-        logout
     } = context;
 
     return (
@@ -40,9 +39,6 @@ const ProfileScreen: React.FC = () => {
                     <button onClick={() => setIsRedeemCodeModalOpen(true)} className="flex items-center gap-1 bg-pink-50 text-pink-600 px-3 py-1.5 rounded-full text-xs font-bold hover:bg-pink-100 transition-colors">
                         <Gift size={14} />
                         <span>Mã quà tặng</span>
-                    </button>
-                     <button onClick={logout} className="flex items-center gap-1 bg-gray-50 text-gray-600 px-3 py-1.5 rounded-full text-xs font-bold hover:bg-gray-100 transition-colors">
-                        <span>Đăng xuất</span>
                     </button>
                 </div>
                 <div className="flex gap-4">

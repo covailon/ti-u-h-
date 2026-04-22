@@ -6,7 +6,11 @@ import { decode } from '../utils/audioUtils';
 import { mockCharacters, mockChatSessions, availableGifts, mockFeedPosts } from '../mockData';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, signInWithGoogle, logout as firebaseLogout } from '../services/firebase';
+import { 
+    auth, 
+    db, 
+    loginAsGuest as firebaseGuestLogin
+} from '../services/firebase';
 
 type RecentChat = {
     id: number;
@@ -92,9 +96,8 @@ interface AppContextType {
   redeemCode: (code: string) => { success: boolean; message: string; reward?: number };
   addCoins: (amount: number) => void;
   user: FirebaseUser | null;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
   isAuthLoading: boolean;
+  authError: string | null;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -159,41 +162,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            setUserProfile(userDoc.data() as UserProfile);
+          } else {
+            const randomNames = [
+              'Người lạ bí ẩn', 'Mèo con đi lạc', 'Lữ hành cô độc', 'Kẻ mộng mơ', 
+              'Chiến thần roleplay', 'Ẩn sĩ đại dương', 'Gấu con ngái ngủ', 
+              'Thợ săn ánh trăng', 'Phù thủy nhỏ', 'Nhà ảo thuật', 'Kẻ lãng du',
+              'Đom đóm đêm', 'Sói xám cô đơn', 'Thỏ ngọc', 'Sơn ca hót', 'Mây lang thang'
+            ];
+            const randomName = randomNames[Math.floor(Math.random() * randomNames.length)];
+            const randomId = Math.floor(1000 + Math.random() * 9000);
+
+            const newProfile: UserProfile = {
+              name: firebaseUser.displayName || `${randomName} #${randomId}`,
+              avatar: firebaseUser.photoURL || 'https://i.pinimg.com/564x/1b/83/b6/1b83b6348184f23b247f311c18d19736.jpg',
+              isNsfwEnabled: false,
+              age: 18,
+              gender: 'other',
+              coins: 500
+            };
+            await setDoc(userDocRef, newProfile);
+            setUserProfile(newProfile);
+          }
+          setIsAuthLoading(false);
         } else {
-          const newProfile: UserProfile = {
-            name: firebaseUser.displayName || 'Người dùng',
-            avatar: firebaseUser.photoURL || 'https://i.pinimg.com/564x/1b/83/b6/1b83b6348184f23b247f311c18d19736.jpg',
-            isNsfwEnabled: false,
-            age: 18,
-            gender: 'other',
-            coins: 500
-          };
-          await setDoc(userDocRef, newProfile);
-          setUserProfile(newProfile);
+          // No user, login as guest automatically
+          await firebaseGuestLogin();
+          // onAuthStateChanged will trigger again with the guest user
         }
+      } catch (error) {
+        console.error("Error fetching user profile or background login:", error);
+        setIsAuthLoading(false);
       }
-      setIsAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
-
-  const login = async () => {
-    await signInWithGoogle();
-  };
-
-  const logout = async () => {
-    await firebaseLogout();
-  };
 
   const [isCalling, setIsCalling] = useState(false);
   const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'connected' | 'ended'>('idle');
@@ -820,7 +834,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isRedeemCodeModalOpen, setIsRedeemCodeModalOpen,
     redeemCode,
     addCoins,
-    user, login, logout, isAuthLoading,
+    user, isAuthLoading, authError,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
