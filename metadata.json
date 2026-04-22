@@ -1,5 +1,5 @@
 {
-  "name": "HeartChat: AI Roleplay Chat",
+  "name": "HeartChat AI Roleplay Chat",
   "description": "An immersive role-playing chat application. Create, connect, and explore worlds with AI characters through a dynamic virtual phone interface.",
   "requestFramePermissions": [
     "microphone"
