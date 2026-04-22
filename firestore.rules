@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['name', 'avatar', 'isNsfwEnabled', 'age', 'gender', 'coins'])
+        && data.keys().size() == 6
+        && data.name is string && data.name.size() <= 100
+        && data.avatar is string && data.avatar.size() <= 500
+        && data.isNsfwEnabled is bool
+        && data.age is number && data.age >= 0 && data.age <= 150
+        && data.gender in ['male', 'female', 'other']
+        && data.coins is number && data.coins >= 0;
+    }
+
+    // --- Collections ---
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatar', 'age', 'gender', 'isNsfwEnabled', 'coins']);
+      
+      // Explicitly deny list to prevent user scraping
+      allow list: if false;
+    }
+  }
+}

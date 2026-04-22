@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about the user, including preferences and currency.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "isNsfwEnabled": { "type": "boolean" },
+        "age": { "type": "number" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "coins": { "type": "number" }
+      },
+      "required": ["name", "avatar", "isNsfwEnabled", "age", "gender", "coins"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document identified by Firebase Auth UID."
+    }
+  }
+}
